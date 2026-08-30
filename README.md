@@ -1,6 +1,8 @@
 # NEXST — Interplanetary Resource-Ledger Concept
 
-**Status: concept study only — no working ledger, smart contract, Layer-2 network or external integration is implemented in this repository.**
+[![quality](https://github.com/vcheeko/nexts-interplanetary-ledger/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/vcheeko/nexts-interplanetary-ledger/actions/workflows/quality.yml)
+
+**Status: concept study + first dependency-free delay/reconciliation experiment — no working protocol, smart contract, Layer-2 network or external integration is implemented.**
 
 NEXST (New Earth X-space System & Transit) is an exploratory product/system concept for a future environment where Earth and Mars cannot depend on low-latency communication.
 
@@ -8,7 +10,7 @@ The core question is:
 
 > How might a resource-accounting system remain useful when communication between planets is delayed by the speed of light and continuous synchronization is impossible?
 
-This repository currently contains the concept note only. It should be read as **speculative systems design**, not as a deployed protocol or validated blockchain architecture.
+The repository should be read as **speculative systems design plus bounded engineering experiments**, not as a deployed protocol or validated blockchain architecture.
 
 ## Why the problem is interesting
 
@@ -63,17 +65,45 @@ Questions worth testing include:
 
 That last question is intentional: the project should not assume blockchain is the answer before the problem is tested.
 
+## Experiment 001 — delayed reconciliation
+
+The first bounded prototype is in [`prototype/ledger_sim.py`](prototype/ledger_sim.py), with the frozen experiment contract in [`EXPERIMENT_001.md`](EXPERIMENT_001.md).
+
+It models two isolated nodes with the same visible resource capacity. Each node may accept a reservation that is valid against its **locally visible** state. Their immutable operation histories are then exchanged after an artificial one-way delay.
+
+The canonical v0.1 case deliberately makes Earth and Mars each reserve `60` units from a visible capacity of `100`. Both are locally consistent during the partition. After delayed reconciliation, both detect a combined reservation of `120` and report `CONFLICT_OVERCOMMITTED`.
+
+This demonstrates conflict **detection**, not conflict resolution, consensus or a production ledger.
+
+Run it locally with:
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py' -v
+python prototype/ledger_sim.py
+```
+
+The repository quality workflow runs the same dependency-free test suite and a deterministic demo assertion.
+
 ## Current implementation
 
 **Implemented today:**
 
-- this public concept document.
+- public concept document;
+- dependency-free Python simulation of isolated local reservations;
+- deterministic artificial one-way transport delay;
+- immutable operation exchange and idempotent duplicate handling;
+- fail-closed operation-identity collision detection;
+- deterministic overcommitment detection after reconciliation;
+- automated unit tests and CI candidate.
 
 **Not implemented today:**
 
+- a production ledger or consensus protocol;
+- cryptographic signatures or authenticated transport;
+- conflict-resolution policy;
+- trusted resource measurement/oracles;
 - Solidity smart contracts;
 - a Layer-2 protocol;
-- a synchronizer or consensus implementation;
 - Chainlink or other oracle integration;
 - Starlink integration;
 - Tesla energy integration;
@@ -87,27 +117,17 @@ Names such as SpaceX, Starlink, Tesla, Chainlink, Bitcoin and Ethereum may be us
 
 **NEXST is not affiliated with, endorsed by, integrated with or authorized by those companies or projects.** Any future integration would require separate technical validation, permissions where applicable, and real interfaces that do not exist here today.
 
-## Credible next step
+## Next engineering gate
 
-The strongest next milestone would not be a larger roadmap claim. It would be a small, reproducible simulation that demonstrates delayed synchronization and conflict handling between two isolated nodes.
+Experiment 001 intentionally stops before choosing how a real system should resolve conflicts. After the exact candidate is tested, the next project decision is which bounded question Experiment 002 should answer, for example:
 
-A useful first prototype could test:
+1. deterministic conflict-resolution policy;
+2. signed checkpoint / tamper-detection model;
+3. repeated partitions and reconnect cycles;
+4. independent resource domains rather than one shared global capacity.
 
-```text
-Earth node ↔ artificial 3–22 minute delay ↔ Mars node
-```
-
-with measurable behavior for:
-
-- disconnected local transactions;
-- delayed checkpoint exchange;
-- conflicting updates;
-- reconciliation rules;
-- audit history;
-- recovery after communication failure.
-
-Only after such experiments would it make sense to decide whether Solidity, an L2 design, a conventional database, signed append-only logs or another architecture is appropriate.
+Only after such experiments should the project decide whether Solidity, an L2 design, a conventional database, signed append-only logs or another architecture is appropriate.
 
 ---
 
-**NEXST is currently a speculative systems concept, not a finished protocol. The goal is to turn the idea into testable engineering questions before making implementation claims.**
+**NEXST remains an exploratory systems project. The goal is to turn ambitious ideas into reproducible engineering questions before making implementation claims.**
