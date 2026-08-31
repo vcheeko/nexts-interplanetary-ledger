@@ -1,0 +1,42 @@
+name: quality
+
+on:
+  push:
+    branches: [main, "experiment/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+          check-latest: false
+      - name: Unit tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Compile prototype
+        run: python -m py_compile prototype/ledger_sim.py
+      - name: Reproducible demo
+        run: |
+          python prototype/ledger_sim.py > "$RUNNER_TEMP/nexst-demo.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          result = json.loads(Path(os.environ["RUNNER_TEMP"]).joinpath("nexst-demo.json").read_text())
+          assert result["experiment"] == "NEXST_DELAY_LEDGER_SIM_0.1"
+          assert result["after_reconciliation"]["earth"]["status"] == "CONFLICT_OVERCOMMITTED"
+          assert result["after_reconciliation"]["mars"]["status"] == "CONFLICT_OVERCOMMITTED"
+          print("NEXST_DEMO=PASS")
+          PY
